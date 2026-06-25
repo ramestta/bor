@@ -373,7 +373,7 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *triedb.Database, g
 		}
 
 		if hash := genesis.ToBlock().Hash(); hash != ghash {
-			return nil, common.Hash{}, nil, &GenesisMismatchError{ghash, hash}
+			log.Warn("Genesis hash mismatch accepted for chain upgrade", "stored", ghash, "computed", hash)
 		}
 	}
 	// Check config compatibility and write the config. Compatibility errors

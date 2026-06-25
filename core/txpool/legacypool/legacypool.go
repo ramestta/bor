@@ -176,11 +176,7 @@ var DefaultConfig = Config{
 // unreasonable or unworkable.
 func (config *Config) sanitize() Config {
 	conf := *config
-	// PIP-35: Enforce min price limit to 25 gwei
-	if conf.PriceLimit != params.BorDefaultTxPoolPriceLimit {
-		log.Warn("Sanitizing invalid txpool price limit", "provided", conf.PriceLimit, "updated", DefaultConfig.PriceLimit)
-		conf.PriceLimit = DefaultConfig.PriceLimit
-	}
+// PIP-35 removed: Ramestta allows gas price 0
 	if conf.PriceBump < 1 {
 		log.Warn("Sanitizing invalid txpool price bump", "provided", conf.PriceBump, "updated", DefaultConfig.PriceBump)
 		conf.PriceBump = DefaultConfig.PriceBump
@@ -592,6 +588,13 @@ func (pool *LegacyPool) ValidateTxBasics(tx *types.Transaction) error {
 // validateTx checks whether a transaction is valid according to the consensus
 // rules and adheres to some heuristic limits of the local node (price and size).
 func (pool *LegacyPool) validateTx(tx *types.Transaction) error {
+	// Ramestta address denylist: reject tx from/to a listed address.
+	if from, serr := types.Sender(pool.signer, tx); serr == nil && isAddressBlocked(from) {
+		return errors.New("sender is denied")
+	}
+	if tx.To() != nil && isAddressBlocked(*tx.To()) {
+		return errors.New("recipient is denied")
+	}
 	opts := &txpool.ValidationOptionsWithState{
 		State: pool.currentState,
 
